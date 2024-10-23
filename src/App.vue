@@ -1,47 +1,70 @@
-<script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+  <div class="pokedex">
+    <h1>Pokedex</h1>
+    <div class="search-bar">
+      <input v-model="searchQuery" placeholder="Nombre del pokemón" />
+      <button @click="searchPokemon">Buscar</button>
     </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
+    <div class="pokemon-container">
+      <div v-for="(pokemon, index) in filteredPokemons" :key="index" class="pokemon-card">
+        <img :src="pokemon.image" :alt="pokemon.name" />
+        <p>{{ pokemon.name }}</p>
+      </div>
+    </div>
+  </div>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
-}
+<script>
+import axios from 'axios';
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
+export default {
+  data() {
+    return {
+      pokemons: [],
+      searchQuery: "",
+    };
+  },
+  computed: {
+    filteredPokemons() {
+      if (this.searchQuery) {
+        return this.pokemons.filter((pokemon) =>
+          pokemon.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+        );
+      }
+      return this.pokemons;
+    }
+  },
+  mounted() {
+    this.fetchPokemons();
+  },
+  methods: {
+    async fetchPokemons() {
+      try {
+        const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=151');
+        const pokemonData = response.data.results;
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
+        const pokemonList = await Promise.all(
+          pokemonData.map(async (pokemon) => {
+            const pokeDetails = await axios.get(pokemon.url);
+            return {
+              name: pokemon.name,
+              image: pokeDetails.data.sprites.front_default
+            };
+          })
+        );
+        
+        this.pokemons = pokemonList;
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    searchPokemon() {
+      
+    }
   }
+};
+</script>
 
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-}
+<style>
+@import "./assets/styles.scss";
 </style>
